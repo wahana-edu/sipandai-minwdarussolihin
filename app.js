@@ -555,6 +555,234 @@
       }
     }
 
+    // ==================== MANAJEMEN AKUN GURU & ORANG TUA (KEPSEK) ====================
+    function showTambahAkunModal(role) {
+      const container = document.getElementById('change-password-modal-container');
+      if (!container) return;
+      const isGuru = role === 'guru';
+      container.innerHTML = `
+        <div class="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4" id="tambah-akun-overlay">
+          <div class="bg-white rounded-2xl p-6 w-full max-w-md card-shadow fade-in max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                <i data-lucide="user-plus" class="w-5 h-5 text-green-600"></i>
+                Tambah Akun ${isGuru ? 'Guru' : 'Orang Tua'}
+              </h3>
+              <button onclick="closeTambahAkunModal()" class="text-gray-400 hover:text-gray-600">
+                <i data-lucide="x" class="w-5 h-5"></i>
+              </button>
+            </div>
+            <div class="space-y-3">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
+                <input type="text" id="ta-nama" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-green-500 focus:outline-none" placeholder="Nama lengkap">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                <input type="text" id="ta-username" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-green-500 focus:outline-none" placeholder="Username untuk login">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <input type="text" id="ta-password" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-green-500 focus:outline-none" placeholder="Minimal 6 karakter">
+              </div>
+              ${isGuru ? `
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">NIP (opsional)</label>
+                  <input type="text" id="ta-nip" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-green-500 focus:outline-none" placeholder="NIP">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Mata Pelajaran</label>
+                  <input type="text" id="ta-mapel" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-green-500 focus:outline-none" placeholder="Contoh: Matematika">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Kelas yang Diampu</label>
+                  <input type="text" id="ta-kelas" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-green-500 focus:outline-none" placeholder="Contoh: I-A|I-B|II-A (pisahkan dengan |)">
+                </div>
+              ` : `
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Nama Anak</label>
+                  <input type="text" id="ta-anak" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-green-500 focus:outline-none" placeholder="Nama anak">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Kelas Anak</label>
+                  <input type="text" id="ta-kelasortu" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-green-500 focus:outline-none" placeholder="Contoh: I-A">
+                </div>
+              `}
+              <div id="ta-message" class="hidden"></div>
+              <div class="flex gap-3 pt-2">
+                <button type="button" onclick="submitTambahAkun('${role}')" id="ta-submit-btn" class="flex-1 btn-primary text-white py-3 rounded-xl font-semibold transition-all hover:shadow-lg flex items-center justify-center gap-2">
+                  <i data-lucide="save" class="w-5 h-5"></i> Simpan
+                </button>
+                <button type="button" onclick="closeTambahAkunModal()" class="px-6 py-3 border border-gray-200 rounded-xl font-semibold text-gray-600 hover:bg-gray-50 transition-all">
+                  Batal
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      lucide.createIcons();
+    }
+
+    function closeTambahAkunModal() {
+      const container = document.getElementById('change-password-modal-container');
+      if (container) container.innerHTML = '';
+    }
+
+    async function submitTambahAkun(role) {
+      const nama = document.getElementById('ta-nama').value.trim();
+      const username = document.getElementById('ta-username').value.trim();
+      const password = document.getElementById('ta-password').value;
+
+      if (!nama || !username || !password) {
+        showMessage('ta-message', 'Mohon lengkapi nama, username, dan password', 'error');
+        return;
+      }
+      if (password.length < 6) {
+        showMessage('ta-message', 'Password minimal 6 karakter', 'error');
+        return;
+      }
+
+      const payload = {
+        schoolId: currentUser.schoolId,
+        role: role,
+        name: nama,
+        username: username,
+        password: password
+      };
+      if (role === 'guru') {
+        payload.nip = document.getElementById('ta-nip').value.trim();
+        payload.mapel = document.getElementById('ta-mapel').value.trim();
+        payload.kelasGuru = document.getElementById('ta-kelas').value.trim();
+      } else {
+        payload.anak = document.getElementById('ta-anak').value.trim();
+        payload.kelasOrtu = document.getElementById('ta-kelasortu').value.trim();
+      }
+
+      const btn = document.getElementById('ta-submit-btn');
+      btn.innerHTML = '<div class="spinner mx-auto"></div>';
+      btn.disabled = true;
+
+      try {
+        const result = await postToSheet('createAkunPengguna', payload);
+        if (result.success) {
+          showMessage('ta-message', 'Akun berhasil dibuat!', 'success');
+          setTimeout(async () => {
+            closeTambahAkunModal();
+            await loadKepsekStats();
+            showKepsekDetail(role === 'guru' ? 'guru' : 'ortu');
+          }, 1000);
+        } else {
+          showMessage('ta-message', result.message || 'Gagal membuat akun', 'error');
+          btn.innerHTML = '<i data-lucide="save" class="w-5 h-5"></i> Simpan';
+          btn.disabled = false;
+          lucide.createIcons();
+        }
+      } catch (e) {
+        showMessage('ta-message', 'Terjadi kesalahan: ' + e.message, 'error');
+        btn.innerHTML = '<i data-lucide="save" class="w-5 h-5"></i> Simpan';
+        btn.disabled = false;
+        lucide.createIcons();
+      }
+    }
+
+    function showResetPasswordAkunModal(userId, nama) {
+      const container = document.getElementById('change-password-modal-container');
+      if (!container) return;
+      container.innerHTML = `
+        <div class="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4" id="reset-akun-overlay">
+          <div class="bg-white rounded-2xl p-6 w-full max-w-md card-shadow fade-in">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                <i data-lucide="key-round" class="w-5 h-5 text-amber-600"></i>
+                Reset Password
+              </h3>
+              <button onclick="closeResetPasswordAkunModal()" class="text-gray-400 hover:text-gray-600">
+                <i data-lucide="x" class="w-5 h-5"></i>
+              </button>
+            </div>
+            <p class="text-sm text-gray-500 mb-4">Atur ulang password untuk <span class="font-semibold text-gray-700">${nama}</span>.</p>
+            <div class="space-y-3">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Password Baru</label>
+                <input type="text" id="rp-new" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-amber-500 focus:outline-none" placeholder="Minimal 6 karakter">
+              </div>
+              <div id="rp-message" class="hidden"></div>
+              <div class="flex gap-3 pt-2">
+                <button type="button" onclick="submitResetPasswordAkun('${userId}')" id="rp-submit-btn" class="flex-1 bg-amber-600 hover:bg-amber-700 text-white py-3 rounded-xl font-semibold transition-all hover:shadow-lg flex items-center justify-center gap-2">
+                  <i data-lucide="save" class="w-5 h-5"></i> Reset
+                </button>
+                <button type="button" onclick="closeResetPasswordAkunModal()" class="px-6 py-3 border border-gray-200 rounded-xl font-semibold text-gray-600 hover:bg-gray-50 transition-all">
+                  Batal
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      lucide.createIcons();
+    }
+
+    function closeResetPasswordAkunModal() {
+      const container = document.getElementById('change-password-modal-container');
+      if (container) container.innerHTML = '';
+    }
+
+    async function submitResetPasswordAkun(userId) {
+      const newPassword = document.getElementById('rp-new').value;
+      if (!newPassword || newPassword.length < 6) {
+        showMessage('rp-message', 'Password baru minimal 6 karakter', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('rp-submit-btn');
+      btn.innerHTML = '<div class="spinner mx-auto"></div>';
+      btn.disabled = true;
+
+      try {
+        const result = await postToSheet('resetPasswordAkun', {
+          userId: userId,
+          schoolId: currentUser.schoolId,
+          newPassword: newPassword
+        });
+        if (result.success) {
+          showMessage('rp-message', 'Password berhasil direset!', 'success');
+          setTimeout(() => closeResetPasswordAkunModal(), 1200);
+        } else {
+          showMessage('rp-message', result.message || 'Gagal mereset password', 'error');
+          btn.innerHTML = '<i data-lucide="save" class="w-5 h-5"></i> Reset';
+          btn.disabled = false;
+          lucide.createIcons();
+        }
+      } catch (e) {
+        showMessage('rp-message', 'Terjadi kesalahan: ' + e.message, 'error');
+        btn.innerHTML = '<i data-lucide="save" class="w-5 h-5"></i> Reset';
+        btn.disabled = false;
+        lucide.createIcons();
+      }
+    }
+
+    async function konfirmasiHapusAkun(userId, nama, role) {
+      const label = role === 'guru' ? 'guru' : 'orang tua';
+      const yakin = confirm(`Hapus akun ${label} "${nama}"? Tindakan ini tidak bisa dibatalkan.`);
+      if (!yakin) return;
+
+      try {
+        const result = await postToSheet('hapusAkunPengguna', {
+          userId: userId,
+          schoolId: currentUser.schoolId
+        });
+        if (result.success) {
+          await loadKepsekStats();
+          showKepsekDetail(role === 'guru' ? 'guru' : 'ortu');
+        } else {
+          alert(result.message || 'Gagal menghapus akun');
+        }
+      } catch (e) {
+        alert('Terjadi kesalahan: ' + e.message);
+      }
+    }
+
     function handleLogout() {
       currentUser = null;
       clearSession();
@@ -1710,47 +1938,73 @@
     function renderGuruList(data) {
       const list = document.getElementById('detail-list');
       list.innerHTML = `
+        <div class="flex justify-end mb-4">
+          <button onclick="showTambahAkunModal('guru')" class="btn-primary text-white px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 hover:shadow-lg transition-all">
+            <i data-lucide="user-plus" class="w-4 h-4"></i> Tambah Akun Guru
+          </button>
+        </div>
         <div class="space-y-3">
           ${data.map((guru, i) => `
             <div class="bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-4 text-left border-l-4 border-green-500">
               <div class="flex items-center gap-3">
-                <div class="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                <div class="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-lg shrink-0">
                   ${guru.name.charAt(0)}
                 </div>
-                <div class="flex-1">
-                  <h4 class="font-semibold text-gray-800">${guru.name}</h4>
-                  <p class="text-sm text-gray-600">NIP: ${guru.nip || '-'}</p>
+                <div class="flex-1 min-w-0">
+                  <h4 class="font-semibold text-gray-800 truncate">${guru.name}</h4>
+                  <p class="text-sm text-gray-600">Username: ${guru.username || '-'} • NIP: ${guru.nip || '-'}</p>
                   <p class="text-xs text-green-600 font-medium">${guru.mapel || 'N/A'}</p>
                 </div>
-                <span class="text-xs bg-green-200 text-green-800 px-3 py-1 rounded-full">#${i + 1}</span>
+                <div class="flex flex-col gap-1.5 shrink-0">
+                  <button onclick="showResetPasswordAkunModal('${guru.id}', '${(guru.name || '').replace(/'/g, "\\'")}')" class="text-xs px-3 py-1.5 rounded-lg font-medium bg-amber-100 text-amber-700 hover:bg-amber-200 transition-all flex items-center gap-1">
+                    <i data-lucide="key-round" class="w-3 h-3"></i> Reset Password
+                  </button>
+                  <button onclick="konfirmasiHapusAkun('${guru.id}', '${(guru.name || '').replace(/'/g, "\\'")}', 'guru')" class="text-xs px-3 py-1.5 rounded-lg font-medium bg-red-100 text-red-700 hover:bg-red-200 transition-all flex items-center gap-1">
+                    <i data-lucide="trash-2" class="w-3 h-3"></i> Hapus
+                  </button>
+                </div>
               </div>
             </div>
           `).join('')}
         </div>
       `;
+      lucide.createIcons();
     }
 
     function renderOrtuList(data) {
       const list = document.getElementById('detail-list');
       list.innerHTML = `
+        <div class="flex justify-end mb-4">
+          <button onclick="showTambahAkunModal('orang_tua')" class="btn-primary text-white px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 hover:shadow-lg transition-all">
+            <i data-lucide="user-plus" class="w-4 h-4"></i> Tambah Akun Orang Tua
+          </button>
+        </div>
         <div class="space-y-3">
           ${data.map((ortu, i) => `
             <div class="bg-gradient-to-r from-emerald-50 to-emerald-100 rounded-xl p-4 text-left border-l-4 border-emerald-500">
               <div class="flex items-center gap-3">
-                <div class="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                <div class="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center text-white font-bold text-lg shrink-0">
                   ${ortu.name.charAt(0)}
                 </div>
-                <div class="flex-1">
-                  <h4 class="font-semibold text-gray-800">${ortu.name}</h4>
-                  <p class="text-sm text-gray-600">Anak: ${ortu.anak || '-'}</p>
+                <div class="flex-1 min-w-0">
+                  <h4 class="font-semibold text-gray-800 truncate">${ortu.name}</h4>
+                  <p class="text-sm text-gray-600">Username: ${ortu.username || '-'} • Anak: ${ortu.anak || '-'}</p>
                   <p class="text-xs text-emerald-600 font-medium">Kelas: ${ortu.kelas || '-'}</p>
                 </div>
-                <span class="text-xs bg-emerald-200 text-emerald-800 px-3 py-1 rounded-full">#${i + 1}</span>
+                <div class="flex flex-col gap-1.5 shrink-0">
+                  <button onclick="showResetPasswordAkunModal('${ortu.id}', '${(ortu.name || '').replace(/'/g, "\\'")}')" class="text-xs px-3 py-1.5 rounded-lg font-medium bg-amber-100 text-amber-700 hover:bg-amber-200 transition-all flex items-center gap-1">
+                    <i data-lucide="key-round" class="w-3 h-3"></i> Reset Password
+                  </button>
+                  <button onclick="konfirmasiHapusAkun('${ortu.id}', '${(ortu.name || '').replace(/'/g, "\\'")}', 'orang_tua')" class="text-xs px-3 py-1.5 rounded-lg font-medium bg-red-100 text-red-700 hover:bg-red-200 transition-all flex items-center gap-1">
+                    <i data-lucide="trash-2" class="w-3 h-3"></i> Hapus
+                  </button>
+                </div>
               </div>
             </div>
           `).join('')}
         </div>
       `;
+      lucide.createIcons();
     }
 
     function showKepsekTab(tab) {
