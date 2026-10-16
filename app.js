@@ -1,8 +1,8 @@
 // Configuration
     const CONFIG = {
-      SPREADSHEET_ID: '184zeiTyiUxRY-qr5hs57KUoShI1vrQ0-eaOQWXSZijY',
-      SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbwyp_aIE4hitPjuUa6OXYe9L28i8kxdd2Vkdz4yDMa1vtQMxyv2AHP4kDsm0oBRqmraKA/exec',
-      DRIVE_FOLDER_ID: '1_NWPoJh2BisDBsgcU3p1VLmr8w0lwAGi'
+      SPREADSHEET_ID: '1eIsojoBSZt5b-HkADZeFU7CgZgV1K7yWqD8eIQpQ-XM',
+      SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbyQhO3-Jb1y-D7UMt_1GqSGG1GRSRJPE8N2YaqQhtDs98-hbvAmFozkcH7tmt3FCbDHXA/exec',
+      DRIVE_FOLDER_ID: '1tF2EhMmhfmn-IyJeWlG-Ji7AK5IDG3sA'
     };
 
     // ==================== SESSION (multi-page) ====================
